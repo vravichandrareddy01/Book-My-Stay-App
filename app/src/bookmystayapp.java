@@ -2,11 +2,11 @@ import java.util.*;
 
 // ---------------- RESERVATION ----------------
 class Reservation {
-    String reservationId;
+    String guestName;
     String roomType;
 
-    Reservation(String reservationId, String roomType) {
-        this.reservationId = reservationId;
+    Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
         this.roomType = roomType;
     }
 }
@@ -19,66 +19,102 @@ class Inventory {
         availability.put(type, count);
     }
 
+    // synchronized → thread safe
+    synchronized boolean bookRoom(String type) {
+
+        int available = availability.getOrDefault(type, 0);
+
+        if (available > 0) {
+            availability.put(type, available - 1);
+            return true;
+        }
+        return false;
+    }
+
     int getAvailability(String type) {
         return availability.getOrDefault(type, 0);
+    }
+}
+
+// ---------------- BOOKING THREAD ----------------
+class BookingThread extends Thread {
+
+    private Queue<Reservation> queue;
+    private Inventory inventory;
+
+    BookingThread(Queue<Reservation> queue, Inventory inventory) {
+        this.queue = queue;
+        this.inventory = inventory;
+    }
+
+    public void run() {
+
+        while (true) {
+
+            Reservation request;
+
+            // synchronized queue access
+            synchronized (queue) {
+                if (queue.isEmpty()) {
+                    break;
+                }
+                request = queue.poll();
+            }
+
+            // process booking
+            boolean success = inventory.bookRoom(request.roomType);
+
+            if (success) {
+                System.out.println(Thread.currentThread().getName()
+                        + " → Booking CONFIRMED for "
+                        + request.guestName + " (" + request.roomType + ")");
+            } else {
+                System.out.println(Thread.currentThread().getName()
+                        + " → Booking FAILED for "
+                        + request.guestName + " (" + request.roomType + ")");
+            }
+        }
     }
 }
 
 // ---------------- MAIN CLASS ----------------
 public class BookMyStayApp {
 
-    // ---------------- UC10: CANCELLATION ----------------
-    public static void cancelBooking() {
+    public static void concurrentBookingSimulation() {
 
-        System.out.println("\n=== Booking Cancellation & Rollback (UC10) ===");
+        System.out.println("\n=== Concurrent Booking Simulation (UC11) ===");
 
-        // Inventory setup
+        // Shared inventory
         Inventory inventory = new Inventory();
-        inventory.addRoom("Single", 1); // after booking
-        inventory.addRoom("Suite", 0);
+        inventory.addRoom("Single", 2);
 
-        // Booking history (confirmed bookings)
-        Map<String, Reservation> bookings = new HashMap<>();
-        bookings.put("R1", new Reservation("R1", "Single"));
-        bookings.put("R2", new Reservation("R2", "Suite"));
+        // Shared queue
+        Queue<Reservation> queue = new LinkedList<>();
+        queue.add(new Reservation("Alice", "Single"));
+        queue.add(new Reservation("Bob", "Single"));
+        queue.add(new Reservation("Charlie", "Single"));
+        queue.add(new Reservation("David", "Single"));
 
-        // Stack for rollback (LIFO)
-        Stack<String> rollbackStack = new Stack<>();
+        // Multiple threads (simulate users)
+        BookingThread t1 = new BookingThread(queue, inventory);
+        BookingThread t2 = new BookingThread(queue, inventory);
 
-        // Cancellation request
-        String cancelId = "R2"; // change to test
+        t1.start();
+        t2.start();
 
-        // Validate booking exists
-        if (!bookings.containsKey(cancelId)) {
-            System.out.println("Cancellation FAILED: Booking not found");
-            return;
+        try {
+            t1.join();
+            t2.join();
+        } catch (InterruptedException e) {
+            System.out.println("Thread interrupted");
         }
 
-        // Get reservation
-        Reservation res = bookings.get(cancelId);
-
-        // Push to rollback stack
-        rollbackStack.push(res.roomType);
-
-        // Restore inventory (increment count)
-        inventory.addRoom(res.roomType,
-                inventory.getAvailability(res.roomType) + 1);
-
-        // Remove from booking history
-        bookings.remove(cancelId);
-
-        System.out.println("Booking CANCELLED for ID: " + cancelId);
-
-        // Show rollback info
-        System.out.println("Rollback Stack (LIFO): " + rollbackStack);
-
-        // Show updated inventory
-        System.out.println("Updated Availability for " + res.roomType +
-                ": " + inventory.getAvailability(res.roomType));
+        System.out.println("Final Availability: " +
+                inventory.getAvailability("Single"));
     }
 
     // ---------------- MAIN ----------------
     public static void main(String[] args) {
-        cancelBooking();
+        concurrentBookingSimulation();
     }
 }
