@@ -1,58 +1,55 @@
 import java.util.*;
 
-// ---------------- SERVICE ----------------
-class Service {
-    String name;
-    double cost;
+// ---------------- RESERVATION ----------------
+class Reservation {
+    String guestName;
+    String roomType;
 
-    Service(String name, double cost) {
-        this.name = name;
-        this.cost = cost;
+    Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
     }
 }
 
 // ---------------- MAIN CLASS ----------------
 public class BookMyStayApp {
 
-    // ---------------- UC7: ADD-ON SERVICE SELECTION ----------------
-    public static void addOnServices() {
+    // ---------------- UC8: BOOKING HISTORY & REPORT ----------------
+    public static void bookingHistoryReport() {
 
-        System.out.println("\n=== Add-On Services (UC7) ===");
+        System.out.println("\n=== Booking History & Report (UC8) ===");
 
-        // Map: ReservationID -> List of Services
-        Map<String, List<Service>> serviceMap = new HashMap<>();
+        // List to store confirmed bookings (ordered)
+        List<Reservation> bookingHistory = new ArrayList<>();
 
-        // Create service lists
-        List<Service> services1 = new ArrayList<>();
-        services1.add(new Service("Breakfast", 200));
-        services1.add(new Service("WiFi", 100));
+        // Simulating confirmed bookings
+        bookingHistory.add(new Reservation("Alice", "Single"));
+        bookingHistory.add(new Reservation("Bob", "Suite"));
+        bookingHistory.add(new Reservation("Charlie", "Single"));
 
-        List<Service> services2 = new ArrayList<>();
-        services2.add(new Service("Airport Pickup", 500));
+        // Display booking history
+        System.out.println("\n--- Booking History ---");
+        for (Reservation r : bookingHistory) {
+            System.out.println("Guest: " + r.guestName + " | Room: " + r.roomType);
+        }
 
-        // Map services to reservations
-        serviceMap.put("R1", services1);
-        serviceMap.put("R2", services2);
+        // Generate simple report
+        System.out.println("\n--- Booking Summary Report ---");
 
-        // Display services + calculate total cost
-        for (String reservationId : serviceMap.keySet()) {
+        Map<String, Integer> report = new HashMap<>();
 
-            System.out.println("Reservation ID: " + reservationId);
+        for (Reservation r : bookingHistory) {
+            report.put(r.roomType, report.getOrDefault(r.roomType, 0) + 1);
+        }
 
-            double totalCost = 0;
-
-            for (Service s : serviceMap.get(reservationId)) {
-                System.out.println("Service: " + s.name + " | Cost: ₹" + s.cost);
-                totalCost += s.cost;
-            }
-
-            System.out.println("Total Add-On Cost: ₹" + totalCost);
-            System.out.println("----------------------");
+        // Display report
+        for (String roomType : report.keySet()) {
+            System.out.println(roomType + " Bookings: " + report.get(roomType));
         }
     }
 
     // ---------------- MAIN ----------------
     public static void main(String[] args) {
-        addOnServices();
+        bookingHistoryReport();
     }
 }
