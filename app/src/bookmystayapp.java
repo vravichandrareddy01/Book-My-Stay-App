@@ -1,95 +1,75 @@
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
-/**
- * UseCase5BookingRequestQueue
- *
- * This class demonstrates handling booking requests using a Queue
- * to ensure First-Come-First-Served (FIFO) processing.
- *
- * No inventory updates are performed in this stage.
- *
- * @author YourName
- * @version 5.1
- */
+// ---------------- INVENTORY ----------------
+class Inventory {
+    private Map<String, Integer> availability = new HashMap<>();
 
-// Reservation class representing a booking request
+    void addRoom(String type, int count) {
+        availability.put(type, count);
+    }
+
+    int getAvailability(String type) {
+        return availability.getOrDefault(type, 0);
+    }
+}
+
+// ---------------- RESERVATION ----------------
 class Reservation {
-    private String guestName;
-    private String roomType;
+    String guestName;
+    String roomType;
 
-    // Constructor
-    public Reservation(String guestName, String roomType) {
+    Reservation(String guestName, String roomType) {
         this.guestName = guestName;
         this.roomType = roomType;
     }
-
-    // Display reservation details
-    public void display() {
-        System.out.println("Guest Name: " + guestName);
-        System.out.println("Requested Room: " + roomType);
-        System.out.println();
-    }
 }
 
-// Booking Queue Manager
-class BookingRequestQueue {
+// ---------------- MAIN CLASS ----------------
+public class BookMyStayApp {
 
-    private Queue<Reservation> queue;
+    // ---------------- UC6: BOOKING PROCESSING ----------------
+    public static void processBookingRequests() {
 
-    // Constructor
-    public BookingRequestQueue() {
-        queue = new LinkedList<>();
-    }
+        System.out.println("\n=== Processing Bookings (UC6) ===");
 
-    // Add booking request
-    public void addRequest(Reservation reservation) {
-        queue.offer(reservation);
-        System.out.println("Booking request added for: " + reservation);
-    }
+        // Inventory setup
+        Inventory inventory = new Inventory();
+        inventory.addRoom("Single", 2);
+        inventory.addRoom("Double", 0);
+        inventory.addRoom("Suite", 3);
 
-    // Display all requests in queue
-    public void displayQueue() {
-        System.out.println("\n---- Booking Request Queue (FIFO Order) ----\n");
+        // Booking Queue (FIFO)
+        Queue<Reservation> bookingQueue = new LinkedList<>();
 
-        if (queue.isEmpty()) {
-            System.out.println("No booking requests in queue.");
-            return;
+        bookingQueue.add(new Reservation("Alice", "Single"));
+        bookingQueue.add(new Reservation("Bob", "Suite"));
+        bookingQueue.add(new Reservation("Charlie", "Single"));
+        bookingQueue.add(new Reservation("David", "Single")); // extra request
+
+        // Process queue
+        while (!bookingQueue.isEmpty()) {
+
+            Reservation request = bookingQueue.poll();
+
+            int available = inventory.getAvailability(request.roomType);
+
+            if (available > 0) {
+
+                // Reduce count → prevent double booking
+                inventory.addRoom(request.roomType, available - 1);
+
+                System.out.println("Booking CONFIRMED for "
+                        + request.guestName + " (" + request.roomType + ")");
+            } else {
+
+                System.out.println("Booking FAILED for "
+                        + request.guestName + " (" + request.roomType + " not available)");
+            }
         }
-
-        for (Reservation r : queue) {
-            r.display();
-        }
     }
-}
 
-// Main Application Class
-public class UseCase5BookingRequestQueue {
-
+    // ---------------- MAIN METHOD ----------------
     public static void main(String[] args) {
-
-        System.out.println("=========================================");
-        System.out.println("     Book My Stay App - v5.1             ");
-        System.out.println("=========================================\n");
-
-        // Initialize booking queue
-        BookingRequestQueue bookingQueue = new BookingRequestQueue();
-
-        // Simulate booking requests
-        Reservation r1 = new Reservation("Alice", "Single Room");
-        Reservation r2 = new Reservation("Bob", "Double Room");
-        Reservation r3 = new Reservation("Charlie", "Suite Room");
-
-        // Add requests to queue (FIFO)
-        bookingQueue.addRequest(r1);
-        bookingQueue.addRequest(r2);
-        bookingQueue.addRequest(r3);
-
-        // Display queue
-        bookingQueue.displayQueue();
-
-        System.out.println("=========================================");
-        System.out.println("     Requests Waiting for Processing     ");
-        System.out.println("=========================================");
+        processBookingRequests();
     }
 }
