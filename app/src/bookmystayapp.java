@@ -1,55 +1,82 @@
 import java.util.*;
 
-// ---------------- RESERVATION ----------------
-class Reservation {
-    String guestName;
-    String roomType;
+// ---------------- CUSTOM EXCEPTION ----------------
+class InvalidBookingException extends Exception {
+    InvalidBookingException(String message) {
+        super(message);
+    }
+}
 
-    Reservation(String guestName, String roomType) {
-        this.guestName = guestName;
-        this.roomType = roomType;
+// ---------------- INVENTORY ----------------
+class Inventory {
+    private Map<String, Integer> availability = new HashMap<>();
+
+    void addRoom(String type, int count) {
+        availability.put(type, count);
+    }
+
+    int getAvailability(String type) {
+        return availability.getOrDefault(type, -1); // -1 = invalid room type
     }
 }
 
 // ---------------- MAIN CLASS ----------------
 public class BookMyStayApp {
 
-    // ---------------- UC8: BOOKING HISTORY & REPORT ----------------
-    public static void bookingHistoryReport() {
+    // ---------------- VALIDATION METHOD ----------------
+    public static void validateBooking(String roomType, int requestedRooms, Inventory inventory)
+            throws InvalidBookingException {
 
-        System.out.println("\n=== Booking History & Report (UC8) ===");
+        // Check valid room type
+        int available = inventory.getAvailability(roomType);
 
-        // List to store confirmed bookings (ordered)
-        List<Reservation> bookingHistory = new ArrayList<>();
-
-        // Simulating confirmed bookings
-        bookingHistory.add(new Reservation("Alice", "Single"));
-        bookingHistory.add(new Reservation("Bob", "Suite"));
-        bookingHistory.add(new Reservation("Charlie", "Single"));
-
-        // Display booking history
-        System.out.println("\n--- Booking History ---");
-        for (Reservation r : bookingHistory) {
-            System.out.println("Guest: " + r.guestName + " | Room: " + r.roomType);
+        if (available == -1) {
+            throw new InvalidBookingException("Invalid Room Type: " + roomType);
         }
 
-        // Generate simple report
-        System.out.println("\n--- Booking Summary Report ---");
-
-        Map<String, Integer> report = new HashMap<>();
-
-        for (Reservation r : bookingHistory) {
-            report.put(r.roomType, report.getOrDefault(r.roomType, 0) + 1);
+        // Check valid quantity
+        if (requestedRooms <= 0) {
+            throw new InvalidBookingException("Invalid number of rooms requested");
         }
 
-        // Display report
-        for (String roomType : report.keySet()) {
-            System.out.println(roomType + " Bookings: " + report.get(roomType));
+        // Check availability
+        if (requestedRooms > available) {
+            throw new InvalidBookingException("Not enough rooms available");
+        }
+    }
+
+    // ---------------- UC9: ERROR HANDLING ----------------
+    public static void processBookingWithValidation() {
+
+        System.out.println("\n=== Error Handling & Validation (UC9) ===");
+
+        Inventory inventory = new Inventory();
+        inventory.addRoom("Single", 2);
+        inventory.addRoom("Suite", 1);
+
+        // Test inputs
+        String roomType = "Single";
+        int requestedRooms = 3; // change to test errors
+
+        try {
+            // Validate first (fail-fast)
+            validateBooking(roomType, requestedRooms, inventory);
+
+            // If valid → process booking
+            inventory.addRoom(roomType,
+                    inventory.getAvailability(roomType) - requestedRooms);
+
+            System.out.println("Booking SUCCESS for " + roomType);
+
+        } catch (InvalidBookingException e) {
+
+            // Graceful error handling
+            System.out.println("Booking FAILED: " + e.getMessage());
         }
     }
 
     // ---------------- MAIN ----------------
     public static void main(String[] args) {
-        bookingHistoryReport();
+        processBookingWithValidation();
     }
 }
